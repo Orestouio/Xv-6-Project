@@ -1,9 +1,21 @@
-# xv6 Scheduler Extension
+# xv6 Priority Scheduler Project
 
-Dissertation work enhancing xv6’s scheduler to priority-based (0-10, 0 highest).
+This repository contains my dissertation work on enhancing the xv6 operating system with a priority scheduler, compared against the default round-robin scheduler.
 
-- **Notes:** `Scheduler_Extension.pdf`—baseline vs. priority results.
-- **Code:** See modified files (`proc.c`, `timingtests.c`, etc.) for implementation.
-- **Run:** `make`, then `make qemu`, then `timingtests` at `$`.
+## Branches
+- **master**: Contains the current implementation of the priority scheduler, with priorities from 0 (highest) to 10 (lowest).
+- **priority-scheduler**: A mirror of the priority scheduler implementation, used for development and comparison.
+- **round-robin-modified**: Contains the modified round-robin scheduler with context switch counting, used to gather performance statistics for comparison.
 
-Orestis Theodorou, March 2025
+## Running Tests
+To retrieve performance statistics:
+1. Checkout the desired branch (`git checkout master` for priority scheduler, `git checkout round-robin-modified` for round-robin).
+2. Set the number of CPUs in `Makefile` (`CPUS := 1` or `CPUS := 2`).
+3. Build and run: `make clean` `make && make qemu`.
+4. At the xv6 prompt, run `timingtests`.
+
+## Repository Structure
+- All xv6 source files are in the root directory.
+- The `timingtests.c` program measures performance across seven workloads, detailed in the dissertation.
+
+For more details, see the LaTeX document in the repository or contact Orestis Theodorou.
