@@ -1,10 +1,14 @@
-#ifndef _USER_H_
-#define _USER_H_
-
 struct stat;
 struct rtcdate;
+struct proc_stat
+{
+    int pid;
+    int turnaround;
+    int response;
+    int waiting;
+    int cpu;
+};
 
-// System calls
 int fork(void);
 int exit(void) __attribute__((noreturn));
 int wait(void);
@@ -26,10 +30,11 @@ int getpid(void);
 char *sbrk(int);
 int sleep(int);
 int uptime(void);
-int setpriority(int, int);
+int getpinfo(int, struct proc_stat *);
+int getticks(void);
+int yield(void); // Added for timingtests.c
 int getcontextswitches(void);
 
-// ulib.c
 int stat(const char *, struct stat *);
 char *strcpy(char *, const char *);
 void *memmove(void *, const void *, int);
@@ -42,5 +47,3 @@ void *memset(void *, int, uint);
 void *malloc(uint);
 void free(void *);
 int atoi(const char *);
-
-#endif

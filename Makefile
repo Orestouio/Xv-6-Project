@@ -102,11 +102,13 @@ xv6memfs.img: bootblock kernelmemfs
 
 bootblock: bootasm.S bootmain.c
 	$(CC) $(CFLAGS) -fno-pic -O -nostdinc -I. -c bootmain.c
-	$(CC) $(CFLAGS) -fno-pic -nostdinc -I. -c bootasm.S
+	$(CC) $(ASFLAGS) -nostdinc -c bootasm.S
 	$(LD) $(LDFLAGS) -N -e start -Ttext 0x7C00 -o bootblock.o bootasm.o bootmain.o
 	$(OBJDUMP) -S bootblock.o > bootblock.asm
-	$(OBJCOPY) -S -O binary -j .text bootblock.o bootblock
-	./sign.pl bootblock
+	$(OBJCOPY) -S -O binary -j .text bootblock.o bootblock.temp
+	dd if=bootblock.temp of=bootblock bs=510 count=1 conv=sync
+	python3 -c 'import sys; sys.stdout.buffer.write(bytes([0x55, 0xAA]))' >> bootblock
+	rm bootblock.temp
 
 entryother: entryother.S
 	$(CC) $(CFLAGS) -fno-pic -nostdinc -I. -c entryother.S
@@ -182,7 +184,6 @@ UPROGS=\
 	_wc\
 	_zombie\
 	_timingtests\
-	_prioritytest\
 
 fs.img: mkfs README $(UPROGS)
 	./mkfs fs.img README $(UPROGS)

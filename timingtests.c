@@ -26,7 +26,7 @@ void run_test(int (*test)(), char *name, int runs)
 
 int main(int argc, char *argv[])
 {
-    printf(1, "Starting scheduling tests with priority...\n");
+    printf(1, "Starting round-robin scheduling tests...\n");
     run_test(timing_cpu_heavy, "Test 1: CPU-heavy", 10);
     run_test(timing_switch_overhead, "Test 2: Switch overhead", 5);
     run_test(timing_io_bound, "Test 3: I/O-bound", 5);
@@ -84,7 +84,7 @@ int timing_switch_overhead(void)
         }
         if (pid == 0)
         {
-            exit();
+            exit(); // Match priority scheduler: immediate exit
         }
         else
         {
@@ -92,7 +92,7 @@ int timing_switch_overhead(void)
         }
     }
     int end = uptime();
-    return end - start; // ~75-80 ticks
+    return end - start;
 }
 
 int timing_io_bound(void)
@@ -112,7 +112,7 @@ int timing_io_bound(void)
             }
             if (pid == 0)
             {
-                sleep(10);
+                sleep(10); // Match priority scheduler: sleep 10 ticks
                 exit();
             }
         }
@@ -122,7 +122,7 @@ int timing_io_bound(void)
         }
     }
     int end = uptime();
-    return end - start; // ~49-50 ticks
+    return end - start;
 }
 
 int timing_mixed_load(void)
@@ -151,9 +151,8 @@ int timing_mixed_load(void)
         if (pid == 0)
         {
             close(pipefd[0]);
-            setpriority(getpid(), 10);
             int start = uptime();
-            sleep(50);
+            sleep(50); // Match priority scheduler: sleep 50 ticks
             int end = uptime();
             int ticks = end - start;
             write(pipefd[1], &ticks, sizeof(ticks));
@@ -173,10 +172,9 @@ int timing_mixed_load(void)
         if (pid == 0)
         {
             close(pipefd[0]);
-            setpriority(getpid(), 0);
             int start = uptime();
             for (volatile int j = 0; j < 50000000; j++)
-                ;
+                ; // Match priority scheduler: 50M iterations
             int end = uptime();
             int ticks = end - start;
             write(pipefd[1], &ticks, sizeof(ticks));
@@ -197,7 +195,7 @@ int timing_mixed_load(void)
         wait();
     }
     close(pipefd[0]);
-    return has_50 ? 50 : (min_ticks == 9999 ? 50 : min_ticks); // 50 ticks
+    return has_50 ? 50 : (min_ticks == 9999 ? 50 : min_ticks);
 }
 
 int timing_process_creation(void)
@@ -215,13 +213,19 @@ int timing_process_creation(void)
         }
         if (pid == 0)
         {
-            exit(); // No exec, just fork and exit
+            exit(); // Match priority scheduler: immediate exit
         }
     }
-    while (wait() != -1)
-        ;
+    for (int i = 0; i < runs; i++)
+    {
+        if (wait() == -1)
+        {
+            printf(1, "wait failed at %d\n", i);
+            break;
+        }
+    }
     int end = uptime();
-    return end - start; // ~25-30 ticks per run
+    return end - start;
 }
 
 int timing_short_tasks(void)
@@ -242,7 +246,7 @@ int timing_short_tasks(void)
             if (pid == 0)
             {
                 for (volatile int j = 0; j < 10000; j++)
-                    ;
+                    ; // Match priority scheduler: 10K iterations
                 exit();
             }
         }
@@ -252,7 +256,7 @@ int timing_short_tasks(void)
         }
     }
     int end = uptime();
-    return end - start; // ~70-80 ticks
+    return end - start;
 }
 
 int timing_starvation_check(void)
@@ -268,9 +272,8 @@ int timing_starvation_check(void)
     }
     if (pid == 0)
     {
-        setpriority(getpid(), 0);
         for (volatile int j = 0; j < 50000; j++)
-            ;
+            ; // Match priority scheduler: 50K iterations
         exit();
     }
     for (int i = 0; i < 5; i++)
@@ -283,9 +286,8 @@ int timing_starvation_check(void)
         }
         if (pid == 0)
         {
-            setpriority(getpid(), 10);
             for (volatile int j = 0; j < 20000000; j++)
-                ;
+                ; // Match priority scheduler: 20M iterations
             exit();
         }
     }
@@ -294,5 +296,5 @@ int timing_starvation_check(void)
         wait();
     }
     int end = uptime();
-    return end - start; // ~25-26 ticks
+    return end - start;
 }
